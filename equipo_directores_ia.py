@@ -42,12 +42,16 @@ REGLAS OBLIGATORIAS:
 1. prompt_ancla (Para generar el fotograma ancla en Nano Banana Pro, 9:16 vertical):
    - DISPOSITIVO & ÓPTICA: Captura en sensor móvil 4K / mirrorless moderna con lente 28mm o 35mm f/3.5-f/4. Profundidad de campo amplia y nítida donde el entorno se reconoce con claridad (NO desenfoque borroso irreal).
    - ILUMINACIÓN REAL: Luz comercial limpia, diáfana, clara y acogedora. Paneles LED de techo empotrados (4000K blanco neutro) combinados con abundante luz natural diurna de ventanales. Cero sombras dramáticas de cine negro, cero contraluces de fantasía, cero lámparas amarillas en la oscuridad.
+   - CASTING LATINOAMERICANO AUTÉNTICO (MERCADO OBJETIVO LATAM):
+     * El mercado objetivo es América Latina (México, Colombia, Perú, Chile, etc.).
+     * La persona debe representar a un profesional o fundador contemporáneo de LATAM con rasgos auténticos hispanos/latinos: cabello castaño oscuro o negro bien peinado, ojos oscuros expresivos, tono de piel cálido natural (oliva suave o neutral cálido latinoamericano).
+     * PROHIBIDO generar modelos nórdicos, rubios anglosajones o tipos de stock gringo/europeo que no conectan con la audiencia de LATAM. Debe sentirse como alguien real trabajando en Polanco (CDMX), San Isidro (Lima) o El Poblado (Medellín).
    - EXPRESIÓN & ACTITUD HUMANA: Sonrisa genuina y cálida (Duchenne smile con arruguitas en los ojos), actitud de bienvenida, expresión cercana y accesible. Cabeza con micro-inclinación natural, hombros relajados (postura humana normal, no rígida militar).
    - VESTUARIO CONTEMPORÁNEO (Smart Casual): Ropa de negocios moderna: blazer ligero desestructurado (beige, crema, azul claro o gris suave) sobre una playera básica limpia de algodón o blusa fresca sin rigidez.
    - ESPACIO TANGIBLE Y VIVO: Oficinas y espacios reales donde vive gente: mostrador de recepción en madera o mármol, macetas con plantas verdes (monstera, ficus), salas de cristal con sillas ergonómicas, laptops, tazas de café. Espacio real, no una nave espacial vacía.
    - COMPOSICIÓN: Si el formato o la toma requiere espacio para gráficos o UI, posicionar a la persona en el tercio izquierdo o derecho dejando el tercio opuesto despejado.
    - BOCA & PIEL: Piel real con poros visibles, micro-brillo natural en zona T, boca en reposo relajada con labios suaves y sellados para el frame 0.
-   - Cierre negativo obligatorio: "No studio lighting equipment visible, no softbox, no light stands, no moody dark shadows, no dramatic theatrical contrast, no orange-and-teal grading, no text, no logos, no watermarks, no plastic airbrushed skin, no distorted hands."
+   - Cierre negativo obligatorio: "Clean unobstructed image, no camera interface, no viewfinder frame lines, no REC symbol, no battery graphic, no timestamp, no on-screen display overlays, no studio lighting equipment visible, no softbox, no light stands, no moody dark shadows, no dramatic theatrical contrast, no orange-and-teal grading, no text, no logos, no watermarks, no plastic airbrushed skin, no distorted hands."
 
 2. prompt_video (Para animar con Veo 3.1 en modo Image-to-Video / Frames to Video):
    - Inicia SIEMPRE con: "Maintain the exact subject, friendly welcoming presence, wardrobe, and environment from the first frame. No morphing, no added objects."
@@ -74,12 +78,12 @@ class SubagenteTalkingHead:
     def generar(self, idea: str, speech: str = "") -> Tuple[str, str]:
         ancla = (
             f"Vertical 9:16 authentic commercial Instagram reel still shot on a 28mm wide-angle lens on a 4K mobile sensor. {idea}. "
-            f"A warm, friendly, and approachable professional with a genuine welcoming smile and expressive eyes, positioned naturally in the left third of the frame. "
-            f"Wearing a modern smart-casual beige tailored blazer over a crisp white tee. "
-            f"Mouth relaxed with lips gently closed in a welcoming smile. Natural skin texture with visible pores and authentic daylight sheen. "
-            f"Environment is a bright, upscale, well-lit modern workspace with an open wooden reception counter, lush indoor green plants (monstera), and clean glass partitions softly visible in readable background depth. "
+            f"An articulate contemporary Latin American tech founder in their early 30s with authentic Hispanic features, well-groomed dark hair, expressive dark brown eyes, and warm natural skin tone, positioned naturally in the left third of the frame. "
+            f"Wearing a modern smart-casual beige tailored blazer over a crisp white crewneck tee. "
+            f"Mouth relaxed with lips gently closed in a welcoming smile (closed-mouth smile ready for lip-sync). Natural skin texture with visible pores and authentic daylight sheen. "
+            f"Environment is a bright, upscale, well-lit modern workspace with an open wooden reception counter, lush indoor green plants (monstera, ficus), and clean glass partitions softly visible in readable background depth. "
             f"Abundant natural daytime window light blended with clean overhead 4000K commercial LED panels, creating a bright, airy, and inviting atmosphere without dark moody shadows. "
-            f"No studio lighting equipment visible, no softbox, no light stands, no moody dark shadows, no dramatic theatrical contrast, no text, no logos, no watermarks, no plastic skin."
+            f"Clean unobstructed image, no camera interface, no viewfinder frame lines, no REC symbol, no battery graphic, no timestamp, no on-screen display overlays, no studio lighting equipment visible, no softbox, no light stands, no moody dark shadows, no dramatic theatrical contrast, no text, no logos, no watermarks, no plastic skin."
         )
         video = (
             f"Maintain the exact subject, friendly welcoming presence, wardrobe, and environment from the first frame. No morphing, no added objects.\n"
@@ -95,11 +99,12 @@ class SubagentePodcast:
     def generar(self, idea: str, speech: str = "") -> Tuple[str, str]:
         ancla = (
             f"Vertical 9:16 crisp social media podcast clip still, 35mm lens perspective on 4K sensor. {idea}. "
-            f"Three-quarter angle, subject engaged in an authentic thoughtful conversation looking 30 degrees off-camera. "
+            f"Three-quarter angle, an articulate Latin American founder or thought leader with authentic Hispanic features, dark hair, and warm olive skin tone, engaged in an authentic thoughtful conversation looking 30 degrees off-camera. "
+            f"Mouth relaxed with closed lips in a gentle listening pause. "
             f"A matte black Shure SM7B dynamic microphone on a clean low-profile arm sits 10 cm from the mouth without obscuring the face. "
             f"Warm, clean studio ambient lighting with readable acoustic wood slat wall and subtle warm practical shelf lighting behind. "
             f"Natural human skin with pores and realistic texture, casual stylish knit crewneck sweater, approachable authentic presence. "
-            f"No studio lighting equipment visible, no softbox, no moody noir shadows, no plastic skin, no watermarks."
+            f"Clean unobstructed image, no camera interface, no viewfinder frame lines, no REC symbol, no battery graphic, no timestamp, no on-screen display overlays, no studio lighting equipment visible, no softbox, no moody noir shadows, no plastic skin, no watermarks."
         )
         video = (
             f"Maintain the exact subject, wardrobe, microphone position, and environment from the first frame. No morphing, no added objects.\n"
@@ -116,10 +121,10 @@ class SubagenteUGC:
         ancla = (
             f"Vertical 9:16 authentic iPhone 15 front-camera selfie perspective, 24mm wide angle with deep focus. {idea}. "
             f"Held casually at arm's length, slightly above eye level. Natural daylight coming from a nearby window. "
-            f"A vibrant, expressive creator looking straight into the front lens with an energetic, relatable, warm smile. "
+            f"A vibrant, expressive Latin American tech creator in their late 20s with warm Hispanic features, dark eyes, and dark hair, looking straight into the front lens with an energetic, relatable, warm closed-mouth smile. "
             f"Authentic unedited skin texture with natural skin details, wearing casual trendy streetwear. "
             f"Real lived-in modern apartment or workspace background with authentic room depth. "
-            f"No studio equipment, no softbox, no professional lighting rigs, no plastic beauty filter, no watermarks."
+            f"Clean unobstructed image, no camera interface, no viewfinder frame lines, no REC symbol, no battery graphic, no timestamp, no on-screen display overlays, no studio equipment, no softbox, no professional lighting rigs, no plastic beauty filter, no watermarks."
         )
         video = (
             f"Maintain the exact creator, casual styling, natural window light, and room from the first frame. No morphing, no added objects.\n"
@@ -135,10 +140,11 @@ class SubagenteStreet:
     def generar(self, idea: str, speech: str = "") -> Tuple[str, str]:
         ancla = (
             f"Vertical 9:16 mobile street interview shot on 28mm smartphone perspective. {idea}. "
-            f"Subject stands on a clean modern pedestrian promenade, looking casually toward an interviewer. "
+            f"Subject is an articulate Latin American professional with contemporary Hispanic features, dark hair, and warm natural skin tone, standing on a clean modern pedestrian promenade, looking casually toward an interviewer. "
+            f"Mouth relaxed with closed lips in a friendly curious expression. "
             f"A black handheld dynamic mic with a clean square cube flag is held by an interviewer's hand near the subject's chest level. "
-            f"Authentic bright daytime natural outdoor light, genuine candid expression with a friendly curious smile. "
-            f"Real city storefronts and passersby naturally visible in background. No studio equipment, no artificial HDR glow."
+            f"Authentic bright daytime natural outdoor light, genuine candid expression. "
+            f"Real city storefronts and passersby naturally visible in background. Clean unobstructed image, no camera interface, no viewfinder frame lines, no REC symbol, no battery graphic, no timestamp, no on-screen display overlays, no studio equipment, no artificial HDR glow."
         )
         video = (
             f"Maintain the exact subject, clothing, microphone, and street setting from the first frame. No morphing, no added objects.\n"
