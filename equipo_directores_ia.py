@@ -2,165 +2,168 @@
 equipo_directores_ia.py
 Sistema Multi-Agente de Producción de Video Corto (Nano Banana Pro & Veo 3.1).
 Consta de un Director General (Router Inteligente) y 5 Subagentes Directores
-Especializados con auto-auditoría forense y copiado al portapapeles.
+Especializados con auto-auditoría forense, generación inteligente con Gemini 3.8 Flash
+y cumplimiento estricto de las reglas anti-IA de Google Flow.
 """
 
+import os
 import sys
+import json
 import re
-import random
 import subprocess
 from typing import Dict, Any, Tuple
 
+# Cargar API Key si existe en .env
+GEMINI_KEY = ""
+for p in [".env", os.path.join(r"c:\Users\Gabo\Documents\entrenamiento de ai", ".env"), os.path.join(r"C:\Users\Gabo\Documents\cerebro-hibrido-v2", ".env")]:
+    if os.path.exists(p):
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("GEMINI_API_KEY="):
+                        GEMINI_KEY = line.strip().split("=", 1)[1].strip()
+                        break
+        except Exception:
+            pass
+        if GEMINI_KEY:
+            break
+
 # ==============================================================================
-# SUBAGENTE 1: TALKING HEAD COMERCIAL (Corporate & Ads)
+# PROMPT SISTEMA FORENSE PARA GEMINI 3.8 FLASH
+# ==============================================================================
+SYSTEM_PROMPT_DIRECTOR = """Eres el Director de Fotografía y Prompt Engineer Forense para Nano Banana Pro (Imagen 3) y Google Veo 3.1 en Google Flow.
+Tu misión es recibir una idea y un texto de voz/diálogo, y redactar DOS prompts en inglés cinematográfico y forense, adaptados con precisión al tema del usuario.
+
+REGLAS OBLIGATORIAS:
+1. prompt_ancla (Para generar el fotograma ancla en Nano Banana Pro, 9:16 vertical):
+   - Escribe como un FOTÓGRAFO EN SET, nunca como un ilustrador.
+   - PROHIBIDO terminantemente usar palabras cliché de IA: cinematic, photorealistic, hyperrealistic, 8k, 4k, masterpiece, ultra detailed, sharp focus, crisp, stunning, octane.
+   - Nombra la cámara y lente física según el formato seleccionado:
+     * talkinghead: 50mm f/2.8 en sensor full-frame, plano medio pecho (MCU), luz suave difusa a 45 grados, fondo reconocible con bokeh sutil f/2.8.
+     * podcast: 85mm prime f/1.8 en ángulo 3/4 (35 grados fuera de eje), micrófono Shure SM7B negro en brazo articulado a 10cm de la boca sin taparla, short lighting 5:1.
+     * ugc: cámara frontal de smartphone 24mm a distancia de brazo, profundidad de campo amplia, micro-temblor de mano, luz natural de ventana.
+     * street: 28mm f/5.6 callejero documental, micrófono de mano con flag sólida sostenido por el entrevistador apuntando a la boca, transeúntes desenfocados.
+     * product: 100mm macro f/4, ángulo heroico 20 grados, luces de recorte duras de 5600K, microtextura física y sombras de contacto reales.
+   - Adapta el sujeto, vestuario y entorno exactamente a la idea del usuario (no impongas oficinas ni trajes a menos que la idea lo pida).
+   - Describe piel humana real con poros visibles, microtextura y asimetría natural.
+   - IMPORTANTE: La boca del sujeto debe estar relajada y completamente cerrada con labios sellados (frame 0 de reposo).
+   - Frase de cierre negativa obligatoria al final del ancla: "No studio equipment visible, no text, no logos, no watermarks, no plastic skin, no HDR glow, no distorted fingers."
+
+2. prompt_video (Para animar con Veo 3.1 en modo Image-to-Video / Frames to Video):
+   - Inicia SIEMPRE con: "Maintain the exact subject, wardrobe, and environment from the first frame. No morphing, no added objects."
+   - No vuelvas a describir ropa ni rasgos físicos (ya viven en el ancla).
+   - Estructura obligatoria en 3 bloques en este orden exacto:
+     CAMERA: [Movimiento de cámara con inercia física real (dolly tracking, push-in, o cámara en mano según el formato)].
+     SUBJECT: [Acción sencilla a velocidad humana real. Si habla o gesticula, describe micro-sacadas oculares, parpadeos naturales, sutil elevación de cejas y labios cerrando en pausas. NUNCA transcribas el diálogo como audio de Veo].
+     ENVIRONMENT: [Entorno en positivo con iluminación constante idéntica al ancla].
+   - Audio obligatorio al final: "Audio: quiet room tone only, no music, no voices." (La locución se maneja con ElevenLabs y lip-sync en postproducción).
+   - Duración obligatoria al final: "Duration: 8 seconds."
+
+Responde ÚNICAMENTE en JSON válido con esta estructura:
+{
+  "formato_elegido": "talkinghead | podcast | ugc | street | product",
+  "director": "Nombre descriptivo del director",
+  "prompt_ancla": "...",
+  "prompt_video": "..."
+}"""
+
+# ==============================================================================
+# SUBAGENTES FALLBACK (En caso de no haber conexión o API)
 # ==============================================================================
 class SubagenteTalkingHead:
-    def __init__(self):
-        self.nombre = "Director de Presentadores Comerciales (Talking Head)"
-        self.focal = "50mm full-frame lens at f/2.8"
-        self.encuadre = "MCU (mid-chest framing), eye level, frontal to the axis"
-        self.iluminacion = "Large soft box key light at 45 degrees off-camera (5600K), gentle fill (-1.5 stops), faint rim light on hair, warm 3200K practical background lamps"
-
+    nombre = "Director de Presentadores Comerciales (Talking Head)"
     def generar(self, idea: str, speech: str = "") -> Tuple[str, str]:
-        if not speech:
-            speech = "Tu equipo comercial pierde el treinta por ciento de los leads por responder tarde. Nosotros lo resolvemos en segundos."
-
         ancla = (
-            f"Photorealistic medium close-up portrait of an articulate professional presenter for: {idea}. "
-            f"Facing camera directly at eye level, looking straight into the lens with a calm, attentive expression. "
-            f"Mouth gently closed, lips relaxed and sealed, neutral corners, zero smile, no teeth visible. "
-            f"Shot on {self.focal}: background softly defocused modern architectural glass atrium with warm practical ambient lamps. "
-            f"{self.iluminacion}. "
-            f"Natural skin texture with visible pores, fine vellus hair, zero plastic retouching, tailored professional blazer over plain shirt. "
-            f"9:16 vertical, no visible studio equipment, no text, no watermarks."
+            f"Vertical 9:16 medium close-up portrait shot on 50mm f/2.8 lens. {idea}. "
+            f"Facing camera directly at eye level with calm, attentive engagement. "
+            f"Mouth gently closed, lips relaxed and completely sealed, neutral expression. "
+            f"Soft key lighting positioned at 45 degrees, balanced with subtle ambient fill. "
+            f"Natural human skin with visible pores, fine texture, zero retouching. "
+            f"No studio equipment visible, no text, no logos, no watermarks, no plastic skin, no HDR glow, no distorted fingers."
         )
-
         video = (
-            f"Maintain the exact presenter, facial geometry, tailored blazer, and glass office background from the first frame. No morphing, no added objects.\n\n"
-            f"CAMERA: Locked-off 50mm medium close-up, eye level, frontal to the axis, with a slow, steady push-in of about 4% over the full 8 seconds and barely perceptible handheld breathing drift. Background stays softly defocused and readable. No cuts, no zoom jumps.\n\n"
-            f"SUBJECT: She speaks directly to the lens with warm, confident authority: \"{speech}\" Her eyebrows lift subtly on key emphasis words and again, softer, on the final benefit. Natural micro-saccades between the viewer's eyes; blinks naturally three times at phrase pauses. Lips fully close on every p, b, and m. At midpoint, her right hand rises briefly at chest height with open palm, then lowers out of frame. Ends with lips softly closed and slight genuine composure. Zero stiffness, zero frozen forehead.\n\n"
-            f"ENVIRONMENT: Modern glass office atrium, soft 45-degree key light, warm practical lamps glowing in background, calm professional atmosphere.\n\n"
-            f"Audio: clear close-mic'd vocal audio in neutral Spanish, quiet office room tone, faint HVAC hum, no music, no subtitles."
+            f"Maintain the exact subject, wardrobe, and environment from the first frame. No morphing, no added objects.\n"
+            f"CAMERA: Locked-off 50mm medium close-up at eye level with a slow, steady push-in of 4% over 8 seconds and slight natural operator inertia.\n"
+            f"SUBJECT: Speaks directly to the viewer with calm confidence. Eyebrows lift subtly on emphasis, natural micro-saccades, blinks naturally at phrase pauses, lips close fully on pauses.\n"
+            f"ENVIRONMENT: Consistent background depth and constant soft directional lighting matching the initial frame without shifting reflections.\n"
+            f"Audio: quiet room tone only, no music, no voices.\nDuration: 8 seconds."
         )
         return ancla, video
 
-# ==============================================================================
-# SUBAGENTE 2: PODCAST / MASTERCLASS 3/4 (Storytelling & Authority)
-# ==============================================================================
 class SubagentePodcast:
-    def __init__(self):
-        self.nombre = "Director de Podcast & Storytelling (3/4 Profile)"
-        self.focal = "85mm prime lens at f/1.8 (creamy bokeh)"
-        self.encuadre = "Tight MCU / close-up at collarbone, three-quarter profile (35 degrees off-axis)"
-
+    nombre = "Director de Podcast & Storytelling (3/4 Profile)"
     def generar(self, idea: str, speech: str = "") -> Tuple[str, str]:
-        if not speech:
-            speech = "Tardé diez años en entender que el problema nunca fue el dinero. Era el miedo a fracasar en público."
-
         ancla = (
-            f"Photorealistic cinematic podcast still. A thoughtful, articulate speaker for: {idea}. "
-            f"Seen in three-quarter profile, camera positioned 35 degrees off eyeline, looking off-camera toward an unseen interviewer with lead room in that direction. "
-            f"Mouth gently closed, lips relaxed and sealed, contemplative expression with slight corrugator tension between brows. "
-            f"A black Shure SM7B dynamic microphone on an articulated boom arm enters from lower camera side, positioned 10 cm from mouth, angled toward it without covering lips. "
-            f"Shot on {self.focal}: dark studio background with warm 2700K Edison practical bulbs in creamy bokeh, faint cool accent light. "
-            f"Short lighting: large soft key from far side of face, near side falling into gentle shadow (5:1 ratio). "
-            f"Natural skin micro-texture, visible pores, charcoal crewneck sweater, elbows resting on dark wooden table. 9:16 vertical, no text, no logos."
+            f"Vertical 9:16 tight medium shot on 85mm prime lens at f/1.8. {idea}. "
+            f"Seen in three-quarter profile, looking 35 degrees off-axis toward an off-camera interviewer. "
+            f"Mouth closed, lips sealed, reflective listening expression. "
+            f"A black Shure SM7B dynamic microphone on an articulated boom arm enters from lower camera side, positioned 10 cm from mouth without covering lips. "
+            f"Short lighting from far side of face with warm practical ambient bokeh in background. "
+            f"Natural skin micro-texture, visible pores. No studio equipment visible, no text, no logos, no watermarks, no plastic skin, no HDR glow, no distorted fingers."
         )
-
         video = (
-            f"Maintain the exact person, sweater, the SM7B microphone and boom arm position, lighting ratio and dark bokeh background from the first frame. The microphone never moves, never merges with the face, and never covers the mouth.\n\n"
-            f"CAMERA: Tripod-locked 85mm three-quarter profile, shallow depth of field, completely stable, with an extremely slow push-in of about 6% starting at second 4. No cuts, no handheld shake.\n\n"
-            f"SUBJECT: The speaker never looks at the camera. First glances down and slightly away (15 degrees) recalling a memory, brows gently knitted, then takes a visible breath and lifts eyes back to the off-camera interviewer to deliver slowly: \"{speech}\" Inner brows lift softly on key emotional words; a long slow blink (300ms) in the reflective pause. Lips close fully on b, m, and p. Left hand turns slowly palm-up on the table. Ends with lips sealed, holding eye contact with the interviewer.\n\n"
-            f"ENVIRONMENT: Intimate dark podcast studio, warm Edison practicals in creamy bokeh, quiet late-night atmosphere.\n\n"
-            f"Audio: warm, intimate, close-mic'd broadcast-quality voice with dynamic microphone proximity effect, low studio room tone, no music, no subtitles."
+            f"Maintain the exact subject, wardrobe, microphone position, and environment from the first frame. No morphing, no added objects. The microphone remains completely stable and never merges with the face.\n"
+            f"CAMERA: Tripod-locked 85mm three-quarter profile with an extremely subtle 5% push-in starting at second 4.\n"
+            f"SUBJECT: The speaker maintains eye line with the off-camera interviewer, breathing naturally with thoughtful micro-expressions, gentle brow articulation, and periodic natural blinks.\n"
+            f"ENVIRONMENT: Intimate studio atmosphere, constant warm rim lighting, unchanging soft background shadows.\n"
+            f"Audio: quiet room tone only, no music, no voices.\nDuration: 8 seconds."
         )
         return ancla, video
 
-# ==============================================================================
-# SUBAGENTE 3: UGC TESTIMONIAL ORGÁNICO (TikTok / Creator)
-# ==============================================================================
 class SubagenteUGC:
-    def __init__(self):
-        self.nombre = "Director de UGC & Creadores (Handheld Selfie)"
-        self.focal = "24mm smartphone front-camera perspective (deep focus)"
-        self.encuadre = "Arm's length selfie perspective, camera 5-10 degrees above eye level"
-
+    nombre = "Director de UGC & Creadores (Handheld Selfie)"
     def generar(self, idea: str, speech: str = "") -> Tuple[str, str]:
-        if not speech:
-            speech = "Ok, llevo dos semanas usando esto y mira mi piel… o sea, ¿qué? No lo puedo creer."
-
         ancla = (
-            f"Authentic smartphone front-camera selfie, vertical 9:16. A relatable natural creator filming at arm's length: {idea}. "
-            f"Wide-angle 24mm smartphone perspective, deep depth of field with lived-in room details in focus behind. "
-            f"Soft natural window daylight from side, realistic phone-camera color balance. "
-            f"Holds small product packaging in free hand near cheek, label facing camera and crisp. Eyes look slightly below lens at screen. "
-            f"Mouth closed, lips relaxed and sealed. Real unedited skin with visible pores, minor blemishes, no beauty filter. Slight sensor grain. Zero logos."
+            f"Vertical 9:16 authentic smartphone front-camera perspective, 24mm wide angle with deep focus. {idea}. "
+            f"Held at arm's length, slightly above eye level. Soft natural directional window daylight. "
+            f"Natural creator looking toward the phone camera, mouth closed, lips relaxed and sealed. "
+            f"Real unedited skin texture with visible pores and natural complexion. "
+            f"No studio equipment visible, no text, no logos, no watermarks, no plastic skin, no HDR glow, no distorted fingers."
         )
-
         video = (
-            f"Maintain the exact creator, casual attire, room background, natural window light and product packaging from the first frame. The product never morphs or changes proportions.\n\n"
-            f"CAMERA: Handheld smartphone selfie at arm's length, 24mm front-camera perspective, deep focus throughout. Continuous organic micro-jitter from hand holding phone, one small natural reframe when bringing product closer, brief focus hunting as product nears lens. No gimbal smoothness.\n\n"
-            f"SUBJECT: Talks fast and casually, mostly watching own screen just below the lens, but snaps direct eye contact to the lens on the punchline: \"{speech}\" Begins with skeptical frown, then eyebrows shoot up asymmetrically on emphasis. Tilts head, briefly glances down at product while rotating it toward camera, then back. Frequent natural blinks; short genuine laugh at the end. Free hand moves product naturally.\n\n"
-            f"ENVIRONMENT: Lived-in interior with natural window daylight, casual morning atmosphere.\n\n"
-            f"Audio: phone-microphone recording of natural upbeat voice, slight room acoustic reverb, faint background street noise, no music, no subtitles."
+            f"Maintain the exact subject, wardrobe, and environment from the first frame. No morphing, no added objects.\n"
+            f"CAMERA: Handheld smartphone selfie at arm's length, 24mm perspective, continuous subtle organic micro-jitter from hand holding phone with natural arm inertia.\n"
+            f"SUBJECT: Speaks casually toward camera with energetic conversational pacing, expressive eyebrow lifts, frequent natural blinks, and relaxed lip closures during speech pauses.\n"
+            f"ENVIRONMENT: Lived-in interior space with unchanging natural window daylight throughout.\n"
+            f"Audio: quiet room tone only, no music, no voices.\nDuration: 8 seconds."
         )
         return ancla, video
 
-# ==============================================================================
-# SUBAGENTE 4: ENTREVISTA CALLEJERA (Street Interview / Vox Pop)
-# ==============================================================================
 class SubagenteStreet:
-    def __init__(self):
-        self.nombre = "Director de Entrevista Callejera (Vox Pop)"
-        self.focal = "28mm wide-angle lens at f/5.6 (readable street depth)"
-        self.encuadre = "Handheld medium shot, 15-25 degrees off-axis from interviewer"
-
+    nombre = "Director de Entrevista Callejera (Vox Pop)"
     def generar(self, idea: str, speech: str = "") -> Tuple[str, str]:
-        pregunta = "¿Qué harías si un robot te contesta el WhatsApp?"
-        respuesta = speech or "Mientras me conteste rápido… ¡mejor que mi ex!"
-
         ancla = (
-            f"Photorealistic street interview still, vertical 9:16. A friendly authentic person on a busy pedestrian shopping street: {idea}. "
-            f"Looking just to the side of the camera at an off-frame interviewer. "
-            f"From bottom-left edge, the interviewer's hand holds a black handheld dynamic microphone with a plain solid mic flag cube (no text), its capsule pointed at subject's mouth 15 cm away, mouth fully visible. "
-            f"Mouth closed, lips relaxed and sealed, curious listening expression, eyebrows slightly raised. "
-            f"Shot on 28mm lens at f/5.6: storefronts and softly blurred pedestrians readable behind. Warm low sun creating rim light on hair. Natural skin texture, pores, documentary handheld feel. Zero logos."
+            f"Vertical 9:16 documentary street interview shot on 28mm lens at f/5.6. {idea}. "
+            f"Subject looks 15 degrees off-axis toward an interviewer. "
+            f"From lower edge, an interviewer's hand holds a clean black dynamic microphone with a solid flag pointed at subject's mouth 15 cm away. "
+            f"Mouth closed, lips sealed, curious engaging expression. Pedestrians softly blurred in background. "
+            f"Natural daylight with warm ambient fill. No studio equipment visible, no text, no logos, no watermarks, no plastic skin, no HDR glow, no distorted fingers."
         )
-
         video = (
-            f"Maintain the exact subject, wardrobe, the mic flag, microphone and interviewer's hand position, golden-hour light and street background from the first frame. The microphone stays firmly pointed at the subject's mouth.\n\n"
-            f"CAMERA: Documentary handheld 28mm at eye level, natural operator body sway and small inertial reframes; no cuts, no gimbal smoothness. Background pedestrians walk naturally with consistent shapes.\n\n"
-            f"SUBJECT: First, off-screen interviewer asks: \"{pregunta}\" During question the subject listens with lips sealed, eyebrows popping up in surprise, then glances up-lateral for one second, thinking. Laughs briefly and answers to the interviewer, not the camera: \"{respuesta}\" Gestures loosely with free hand, then shoots one quick playful glance into lens at the end. Only one person speaks at a time; lips close fully on m and p.\n\n"
-            f"ENVIRONMENT: Lively pedestrian shopping street at golden hour, warm backlight, soft-focus passersby, urban street energy.\n\n"
-            f"Audio: two distinct voices captured by handheld dynamic mic — off-screen interviewer's question, then subject's laughing answer in Spanish; street ambience with footsteps and city murmur, no music, no subtitles."
+            f"Maintain the exact subject, wardrobe, microphone, and street setting from the first frame. No morphing, no added objects.\n"
+            f"CAMERA: Documentary handheld 28mm at eye level with organic operator breathing sway and gentle inertial reframing.\n"
+            f"SUBJECT: The subject reacts with expressive curiosity, eyebrows lifting in surprise, gesturing naturally with free hand, lips closing cleanly at speech pauses.\n"
+            f"ENVIRONMENT: Open pedestrian street environment with consistent daylight and natural background movement.\n"
+            f"Audio: quiet room tone only, no music, no voices.\nDuration: 8 seconds."
         )
         return ancla, video
 
-# ==============================================================================
-# SUBAGENTE 5: PRODUCTO MACRO & B-ROLL NARRATIVO
-# ==============================================================================
 class SubagenteProduct:
-    def __init__(self):
-        self.nombre = "Director de Demostración de Producto & Macro"
-        self.focal = "100mm macro lens at f/4 (razor-thin depth of field)"
-        self.encuadre = "Heroic 20-degree low angle or 90-degree top-down"
-
+    nombre = "Director de Demostración de Producto & Macro"
     def generar(self, idea: str, speech: str = "") -> Tuple[str, str]:
-        hook_action = speech or "a heavy water droplet splashes onto the surface in slow-motion, followed by a damped mechanical opening"
-
         ancla = (
-            f"Photorealistic premium product macro shot, vertical 9:16: {idea}. "
-            f"Shot from a low heroic angle of 20 degrees with a 100mm macro lens at f/4: razor-thin focus on product's front edge, background falling into deep darkness. "
-            f"Dramatic lighting: two hard 5600K strip rim lights from left and right tracing contours, subtle brand accent glow from behind, crisp specular highlights on surface textures. "
-            f"Physically accurate micro-surface texture, precise seam line, clean luxury commercial look. Zero text, zero extra objects, zero watermarks."
+            f"Vertical 9:16 macro product hero shot on 100mm macro lens at f/4. {idea}. "
+            f"Low 20-degree heroic angle, razor-thin focal plane on front detailing, background falling into soft dark depth. "
+            f"Dual 5600K hard strip rim lights tracing contours with subtle colored accent glow. "
+            f"Physically accurate surface textures, seam lines, and specular highlights. "
+            f"No studio equipment visible, no text, no logos, no watermarks, no plastic skin, no HDR glow, no distorted fingers."
         )
-
         video = (
-            f"Maintain the exact product shape, size, matte finish, seam lines and materials from the first frame. It never morphs, duplicates or changes proportions. Keep rim lighting and accent glow exactly.\n\n"
-            f"CAMERA: 100mm macro on a motorized slider: extreme slow-motion opening for the first 2 seconds, then smooth speed ramp to real time as camera performs a slow 20-degree orbit and push-in. One gentle rack focus across the surface. Perfectly stable, no shake, no cuts.\n\n"
-            f"SUBJECT: Hook: in slow motion, {hook_action}. A realistic hand with five well-proportioned fingers enters frame from right, pressing and interacting with damped physical resistance. Contact shadows and fingertip pressure look physically real. Zero distortion of product dimensions.\n\n"
-            f"ENVIRONMENT: Dark premium tabletop set, hard rim lights, colored accent glow, minimalist luxury mood.\n\n"
-            f"Audio: crisp amplified impact sound, satisfying mechanical click, deep low-frequency whoosh during speed ramp, no voice, no music, no subtitles."
+            f"Maintain the exact product shape, proportions, materials, and lighting from the first frame. No morphing, no duplication.\n"
+            f"CAMERA: 100mm macro on a motorized slider performing a smooth, continuous 15-degree orbital pan with steady mechanical inertia.\n"
+            f"SUBJECT: An anatomically correct hand enters frame with five distinct fingers, interacting with the product with realistic physical contact shadows and damped motion.\n"
+            f"ENVIRONMENT: Minimalist tabletop set with unchanging rim highlights and consistent specular reflections.\n"
+            f"Audio: quiet room tone only, no music, no voices.\nDuration: 8 seconds."
         )
         return ancla, video
 
@@ -181,22 +184,47 @@ class DirectorGeneralRouter:
         p = peticion_usuario.lower()
         if any(k in p for k in ["podcast", "shure", "sm7b", "entrevista estudio", "diary", "conversacion", "leccion de vida"]):
             return "podcast"
-        elif any(k in p for k in ["ugc", "selfie", "celular", "tiktok shop", "creador", "probando", "recomiendo", "reseña"]):
+        elif any(k in p for k in ["ugc", "selfie", "celular", "tiktok shop", "creador", "probando", "recomiendo", "reseña", "unboxing"]):
             return "ugc"
         elif any(k in p for k in ["calle", "street", "vox pop", "transeunte", "microfono de mano", "pregunta calle"]):
             return "street"
-        elif any(k in p for k in ["producto", "macro", "splash", "unboxing", "reloj", "perfume", "audifono", "botella"]):
+        elif any(k in p for k in ["producto", "macro", "splash", "reloj", "perfume", "audifono", "botella"]):
             return "product"
         else:
-            # Por defecto: Talking Head Comercial
             return "talkinghead"
 
     def procesar(self, idea_usuario: str, speech_usuario: str = "", formato_forzado: str = None) -> Dict[str, Any]:
-        formato = formato_forzado if formato_forzado in self.agentes else self.enrutar(idea_usuario)
-        agente = self.agentes[formato]
+        formato = formato_forzado if (formato_forzado and formato_forzado in self.agentes) else self.enrutar(idea_usuario)
 
+        # 1. Intentar generación inteligente con Gemini 3.8 Flash si hay API Key
+        if GEMINI_KEY:
+            try:
+                from google import genai
+                client = genai.Client(api_key=GEMINI_KEY)
+                prompt_input = (
+                    f"Idea: {idea_usuario}\n"
+                    f"Speech/Diálogo: {speech_usuario}\n"
+                    f"Formato forzado: {formato}"
+                )
+                response = client.models.generate_content(
+                    model="gemini-3.8-flash",
+                    contents=SYSTEM_PROMPT_DIRECTOR + "\n\n" + prompt_input,
+                    config={"response_mime_type": "application/json"}
+                )
+                data = json.loads(response.text)
+                if "prompt_ancla" in data and "prompt_video" in data:
+                    return {
+                        "formato_elegido": data.get("formato_elegido", formato),
+                        "director": data.get("director", self.agentes[formato].nombre),
+                        "prompt_ancla": data["prompt_ancla"].strip(),
+                        "prompt_video": data["prompt_video"].strip()
+                    }
+            except Exception as e:
+                print(f"[Aviso] Gemini Fallback: {e}")
+
+        # 2. Fallback local si no hay API Key o falla
+        agente = self.agentes.get(formato, self.agentes["talkinghead"])
         ancla, video = agente.generar(idea_usuario, speech_usuario)
-
         return {
             "formato_elegido": formato,
             "director": agente.nombre,
@@ -248,20 +276,6 @@ def main():
     print("-" * 75)
     print(resultado["prompt_video"])
     print("-" * 75)
-
-    # Guardar en archivo y copiar al portapapeles el ancla
-    with open("ultimo_ancla_multiagente.txt", "w", encoding="utf-8") as f:
-        f.write(resultado["prompt_ancla"])
-    with open("ultimo_video_multiagente.txt", "w", encoding="utf-8") as f:
-        f.write(resultado["prompt_video"])
-
-    try:
-        subprocess.run(['powershell', '-Command', 'Set-Clipboard -Value (Get-Content "ultimo_ancla_multiagente.txt" -Raw)'], check=True)
-        print("\n[✓] ¡Prompt ancla copiado automáticamente al portapapeles de Windows!")
-        print("    (Para el video, ejecuta: Get-Content ultimo_video_multiagente.txt | Set-Clipboard)")
-    except Exception:
-        pass
-    print("=" * 75)
 
 if __name__ == "__main__":
     main()
