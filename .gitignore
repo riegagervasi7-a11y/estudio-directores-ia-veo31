@@ -1,0 +1,22 @@
+# Entorno y claves secretas
+.env
+*.env
+__pycache__/
+*.pyc
+
+# Modelos pesados binarios (Se suben a Hugging Face Hub, no a GitHub)
+modelo_entrenado/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.zip
+*.tar.gz
+
+# Archivos multimedia temporales
+*.mp4
+*.crdownload
+
+# Editor
+.vscode/
+.idea/
