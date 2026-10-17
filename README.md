@@ -41,11 +41,12 @@ El proyecto incluye un servidor de estudio local integrado:
 
 ## 📦 Modelos y Checkpoints LoRA (Hugging Face)
 
-Los adaptadores LoRA (r=32, alpha=64) entrenados con Unsloth en Kaggle Dual GPU (T4 x2) se alojan en Hugging Face Hub:
-- `lora_video_maestro_5_formatos_8b`: Suite unificada de los 5 formatos de video corto.
-- `lora_video_podcast_8b`: Especialista en podcast 3/4 y storytelling con SM7B.
-- `lora_video_ugc_8b`: Especialista en video selfie y TikTok Shop.
-- `lora_dpo_nano_banana`: Calibrador fotorrealista anti-alucinación para Nano Banana Pro.
+Los adaptadores LoRA (r=32, alpha=64) entrenados con Unsloth en Kaggle Dual GPU (T4 x2) están publicados en Hugging Face Hub:
+- [👑 `Gabinhoo/llama3.1-8b-lora-video-maestro-5formatos`](https://huggingface.co/Gabinhoo/llama3.1-8b-lora-video-maestro-5formatos): Suite unificada de los 5 formatos de video corto.
+- [🎙️ `Gabinhoo/llama3.1-8b-lora-video-podcast-3-4`](https://huggingface.co/Gabinhoo/llama3.1-8b-lora-video-podcast-3-4): Especialista en podcast 3/4 y storytelling con SM7B.
+- [📱 `Gabinhoo/llama3.1-8b-lora-video-ugc-creadores`](https://huggingface.co/Gabinhoo/llama3.1-8b-lora-video-ugc-creadores): Especialista en video selfie y TikTok Shop.
+- [🍌 `Gabinhoo/qwen2.5-3b-lora-dpo-nano-banana-pro`](https://huggingface.co/Gabinhoo/qwen2.5-3b-lora-dpo-nano-banana-pro): Calibrador fotorrealista anti-alucinación para Nano Banana Pro.
+- [🎬 `Gabinhoo/llama3.1-8b-lora-video-modo-bestia-v1`](https://huggingface.co/Gabinhoo/llama3.1-8b-lora-video-modo-bestia-v1): Primer adaptador experimental modo bestia.
 
 ---
 
