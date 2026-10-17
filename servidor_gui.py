@@ -23,15 +23,27 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-from equipo_directores_ia import DirectorGeneralRouter
+try:
+    from equipo_directores_ia import DirectorGeneralRouter
+except ImportError:
+    try:
+        from brain.directores.equipo_directores_ia import DirectorGeneralRouter
+    except ImportError:
+        sys.path.insert(0, r"c:\Users\Gabo\Documents\entrenamiento de ai")
+        from equipo_directores_ia import DirectorGeneralRouter
 
 # Cargar API Key si existe en .env
 GEMINI_KEY = ""
-if os.path.exists(".env"):
-    with open(".env", "r", encoding="utf-8") as f:
-        for line in f:
-            if line.startswith("GEMINI_API_KEY="):
-                GEMINI_KEY = line.strip().split("=", 1)[1].strip()
+env_paths = [".env", os.path.join(r"c:\Users\Gabo\Documents\entrenamiento de ai", ".env"), os.path.join(r"C:\Users\Gabo\Documents\cerebro-hibrido-v2", ".env")]
+for ep in env_paths:
+    if os.path.exists(ep):
+        with open(ep, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("GEMINI_API_KEY="):
+                    GEMINI_KEY = line.strip().split("=", 1)[1].strip()
+                    break
+        if GEMINI_KEY:
+            break
 
 # Inicializar Router de Directores
 router = DirectorGeneralRouter()
@@ -68,6 +80,8 @@ def copiar_a_portapapeles(texto: str) -> bool:
 def obtener_estado_modelos() -> Dict[str, Any]:
     """Escanea la carpeta modelo_entrenado/ para reportar los LoRAs listos."""
     base_dir = os.path.join(os.path.dirname(__file__), "modelo_entrenado")
+    if not os.path.exists(base_dir):
+        base_dir = r"c:\Users\Gabo\Documents\entrenamiento de ai\modelo_entrenado"
     modelos = []
     if os.path.exists(base_dir):
         for entry in os.listdir(base_dir):
@@ -88,7 +102,66 @@ def obtener_estado_modelos() -> Dict[str, Any]:
         "gemini_disponible": bool(GEMINI_KEY)
     }
 
-HTML_TEMPLATE = """<!DOCTYPE html>
+if os.path.exists(os.path.join(os.path.dirname(__file__), "proyecto_activo.txt")):
+    CEREBRO_V2_DIR = os.path.dirname(__file__)
+else:
+    CEREBRO_V2_DIR = r"C:\Users\Gabo\Documents\cerebro-hibrido-v2"
+
+def obtener_datos_cerebro() -> Dict[str, Any]:
+    if not os.path.exists(CEREBRO_V2_DIR):
+        return {"disponible": False}
+    
+    prj_file = os.path.join(CEREBRO_V2_DIR, "proyecto_activo.txt")
+    proyecto_activo = "desconocido"
+    if os.path.exists(prj_file):
+        with open(prj_file, "r", encoding="utf-8") as f:
+            proyecto_activo = f.read().strip()
+    
+    shotlist_path = os.path.join(CEREBRO_V2_DIR, "proyectos", proyecto_activo, "shotlist.json")
+    shots = []
+    if os.path.exists(shotlist_path):
+        try:
+            with open(shotlist_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                shots = data.get("shots", [])
+        except Exception:
+            pass
+            
+    return {
+        "disponible": True,
+        "ruta": CEREBRO_V2_DIR,
+        "proyecto_activo": proyecto_activo,
+        "total_shots": len(shots),
+        "shots": shots
+    }
+
+def actualizar_shot_cerebro(shot_id: str, ancla: str, video: str, formato: str = None) -> bool:
+    datos = obtener_datos_cerebro()
+    if not datos.get("disponible"):
+        return False
+    prj = datos.get("proyecto_activo")
+    shotlist_path = os.path.join(CEREBRO_V2_DIR, "proyectos", prj, "shotlist.json")
+    if not os.path.exists(shotlist_path):
+        return False
+    try:
+        with open(shotlist_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for s in data.get("shots", []):
+            if s.get("id") == shot_id:
+                if ancla:
+                    s["anchor_prompt"] = ancla
+                if video:
+                    s["video_prompt_completo"] = video
+                if formato:
+                    s["formato"] = formato
+                break
+        with open(shotlist_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception:
+        return False
+
+HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="es" class="dark">
 <head>
   <meta charset="UTF-8">
@@ -156,6 +229,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     <!-- Live System Badges -->
     <div class="flex items-center space-x-3 text-xs">
+      <div id="badge-cerebro" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-indigo-500/40 text-indigo-300">
+        <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+        <span id="txt-cerebro">Cerebro: Conectando...</span>
+      </div>
       <div id="badge-modelos" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
         <span id="txt-modelos">Detectando modelos...</span>
@@ -258,6 +335,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <div class="border-b border-slate-800/80 px-8 flex space-x-8 bg-dark-950/60 text-sm font-medium">
         <button onclick="cambiarTab('estudio')" id="tab-btn-estudio" class="py-3.5 border-b-2 border-brand-500 text-white font-semibold flex items-center space-x-2">
           <span>⚡ Generador de Prompts (Studio)</span>
+        </button>
+        <button onclick="cambiarTab('cerebro')" id="tab-btn-cerebro" class="py-3.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 transition">
+          <span>🎬 Cerebro Híbrido (Shotlist)</span>
         </button>
         <button onclick="cambiarTab('chat')" id="tab-btn-chat" class="py-3.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 transition">
           <span>💬 Conversar con el Director</span>
@@ -374,6 +454,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
         </div>
 
+        <!-- Inyección directa a Cerebro Híbrido -->
+        <div id="contenedor-inyeccion" class="glass rounded-2xl p-4 border border-indigo-500/30 flex items-center justify-between space-x-4 hidden">
+          <div class="flex items-center space-x-3">
+            <span class="text-xl">🧠</span>
+            <div>
+              <div class="text-xs font-bold text-white">Inyectar en Cerebro Híbrido</div>
+              <p class="text-[11px] text-slate-400">Guarda estos prompts generados directamente en una toma del <span id="label-inyeccion-prj" class="text-indigo-300 font-mono">shotlist.json</span></p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <select id="select-toma-cerebro" class="bg-dark-950 border border-slate-800 text-xs text-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500">
+              <!-- Cargado dinámicamente -->
+            </select>
+            <button onclick="inyectarPromptEnToma()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-lg shadow-indigo-500/20 transition flex items-center space-x-1.5">
+              <span>💾 Guardar en Toma</span>
+            </button>
+          </div>
+        </div>
+
       </section>
 
       <!-- TAB 2: CHAT CON EL DIRECTOR -->
@@ -437,6 +536,42 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             <a href="https://www.kaggle.com" target="_blank" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition">
               Abrir Kaggle en el navegador ↗
             </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: CEREBRO HIBRIDO (PIPELINE & SHOTLIST) -->
+      <section id="tab-cerebro" class="p-8 max-w-6xl w-full mx-auto space-y-6 hidden">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="flex items-center space-x-3">
+              <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+                <span>🧠 Cerebro Híbrido: Pipeline & Shotlist</span>
+              </h2>
+              <span id="label-proyecto-activo" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                Cargando...
+              </span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Conexión con <code class="font-mono text-indigo-400">C:/Users/Gabo/Documents/cerebro-hibrido-v2</code></p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button onclick="cargarCerebro()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+              <span>🔄 Recargar Tomas</span>
+            </button>
+            <button onclick="abrirCarpetaCerebro()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-500/20 transition flex items-center space-x-1.5">
+              <span>📂 Abrir Cerebro Híbrido</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tomas del Shotlist -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+            <span id="resumen-tomas">Cargando tomas del proyecto activo...</span>
+            <span class="text-[11px] text-slate-500">Haz clic en 'Cargar en Estudio' para calibrar el prompt con nuestros 5 Directores</span>
+          </div>
+          <div id="grid-shots-cerebro" class="grid grid-cols-1 gap-3.5">
+            <!-- Cargado dinámicamente -->
           </div>
         </div>
       </section>
@@ -534,6 +669,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         document.getElementById('output-video').innerText = data.prompt_video;
         document.getElementById('contenedor-resultados').classList.remove('hidden');
 
+        if (datosCerebro && datosCerebro.disponible) {
+          const iny = document.getElementById('contenedor-inyeccion');
+          if (iny) iny.classList.remove('hidden');
+        }
+
         // Scroll suave hacia los resultados
         document.getElementById('contenedor-resultados').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         mostrarToast("✅ Prompts generados y calibrados con éxito");
@@ -562,15 +702,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function cambiarTab(tab) {
-      ['estudio', 'chat', 'modelos'].forEach(t => {
-        document.getElementById('tab-' + t).classList.add('hidden');
-        document.getElementById('tab-btn-' + t).className = "py-3.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 transition";
+      ['estudio', 'cerebro', 'chat', 'modelos'].forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        const btn = document.getElementById('tab-btn-' + t);
+        if (el) el.classList.add('hidden');
+        if (btn) btn.className = "py-3.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center space-x-2 transition";
       });
 
-      document.getElementById('tab-' + tab).classList.remove('hidden');
-      document.getElementById('tab-btn-' + tab).className = "py-3.5 border-b-2 border-brand-500 text-white font-semibold flex items-center space-x-2";
+      const activeEl = document.getElementById('tab-' + tab);
+      const activeBtn = document.getElementById('tab-btn-' + tab);
+      if (activeEl) activeEl.classList.remove('hidden');
+      if (activeBtn) activeBtn.className = "py-3.5 border-b-2 border-brand-500 text-white font-semibold flex items-center space-x-2";
 
       if (tab === 'modelos') cargarModelos();
+      if (tab === 'cerebro') cargarCerebro();
     }
 
     async function cargarModelos() {
@@ -677,8 +822,118 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       }, 3000);
     }
 
+    let datosCerebro = null;
+
+    async function cargarCerebro() {
+      try {
+        const resp = await fetch('/api/cerebro');
+        const data = await resp.json();
+        datosCerebro = data;
+        
+        if (data.disponible) {
+          const badgeTxt = document.getElementById('txt-cerebro');
+          if (badgeTxt) badgeTxt.innerText = `Cerebro: ${data.proyecto_activo}`;
+          const prjLbl = document.getElementById('label-proyecto-activo');
+          if (prjLbl) prjLbl.innerText = data.proyecto_activo;
+          const resTxt = document.getElementById('resumen-tomas');
+          if (resTxt) resTxt.innerText = `${data.total_shots} tomas en el proyecto activo (${data.proyecto_activo})`;
+          const inyPrj = document.getElementById('label-inyeccion-prj');
+          if (inyPrj) inyPrj.innerText = data.proyecto_activo;
+          
+          // Poblar select de inyeccion
+          const select = document.getElementById('select-toma-cerebro');
+          if (select) {
+            select.innerHTML = data.shots.filter(s => s.kind !== 'ui_insert').map(s => `
+              <option value="${s.id}">${s.id}: ${s.vo_text ? s.vo_text.substring(0, 45) + '...' : s.id}</option>
+            `).join('');
+          }
+          
+          // Poblar lista de tomas en tab-cerebro
+          const grid = document.getElementById('grid-shots-cerebro');
+          if (grid) {
+            grid.innerHTML = data.shots.map(s => {
+              const isInsert = s.kind === 'ui_insert';
+              const formatBadge = s.formato ? `<span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300 font-mono">${s.formato}</span>` : '';
+              return `
+                <div class="glass p-4 rounded-xl border border-slate-800 hover:border-slate-700 transition flex items-start justify-between space-x-4">
+                  <div class="space-y-1.5 flex-1">
+                    <div class="flex items-center space-x-2">
+                      <span class="font-mono font-bold text-xs ${isInsert ? 'text-amber-400' : 'text-indigo-400'}">${s.id}</span>
+                      <span class="text-[10px] px-1.5 py-0.2 rounded ${isInsert ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-800 text-slate-300'}">${s.kind || 'shot'}</span>
+                      ${formatBadge}
+                      <span class="text-[10px] text-slate-500">${s.framing || ''} ${s.camera ? (s.camera.lens || '') : ''}</span>
+                    </div>
+                    <p class="text-xs text-slate-200">${s.vo_text || s.description || (s.subject ? s.subject.action : 'Sin texto')}</p>
+                    ${s.anchor_prompt ? `<div class="text-[11px] font-mono text-slate-400 truncate">🍌 Ancla: ${s.anchor_prompt.substring(0, 80)}...</div>` : ''}
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    ${!isInsert ? `
+                      <button onclick='cargarTomaEnEstudio(${JSON.stringify(s).replace(/'/g, "&#39;")})' class="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition">
+                        ⚡ Cargar en Estudio
+                      </button>
+                    ` : '<span class="text-[11px] text-slate-500">Remotion UI</span>'}
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+        } else {
+          const badgeTxt = document.getElementById('txt-cerebro');
+          if (badgeTxt) badgeTxt.innerText = 'Cerebro: No detectado';
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function cargarTomaEnEstudio(s) {
+      seleccionarAgente(s.formato || 'auto');
+      document.getElementById('input-idea').value = s.description || (s.subject ? s.subject.action : '') || s.vo_text || '';
+      document.getElementById('input-speech').value = s.vo_text || '';
+      cambiarTab('estudio');
+      mostrarToast(`Toma ${s.id} cargada en el Estudio`);
+    }
+
+    async function inyectarPromptEnToma() {
+      if (!ultimoResultado) {
+        mostrarToast("Primero genera los prompts.");
+        return;
+      }
+      const select = document.getElementById('select-toma-cerebro');
+      const shotId = select.value;
+      if (!shotId) return;
+
+      try {
+        const resp = await fetch('/api/cerebro/update_shot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            shot_id: shotId,
+            ancla: ultimoResultado.prompt_ancla,
+            video: ultimoResultado.prompt_video,
+            formato: ultimoResultado.formato_elegido
+          })
+        });
+        const data = await resp.json();
+        if (data.status === 'ok') {
+          mostrarToast(`✅ Prompts inyectados con éxito en la toma ${shotId} de shotlist.json`);
+          cargarCerebro();
+        } else {
+          mostrarToast("Error al inyectar en shotlist.json");
+        }
+      } catch (e) {
+        mostrarToast("Error: " + e);
+      }
+    }
+
+    async function abrirCarpetaCerebro() {
+      await fetch('/api/cerebro/open', { method: 'POST' });
+      mostrarToast("📂 Carpeta de Cerebro Híbrido abierta");
+    }
+
     // Inicializar estado al cargar
     cargarModelos();
+    cargarCerebro();
   </script>
 </body>
 </html>
@@ -697,6 +952,12 @@ class ManejadorEstudio(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             data = obtener_estado_modelos()
+            self.wfile.write(json.dumps(data).encode("utf-8"))
+        elif url.path == "/api/cerebro":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            data = obtener_datos_cerebro()
             self.wfile.write(json.dumps(data).encode("utf-8"))
         else:
             self.send_response(404)
@@ -757,6 +1018,25 @@ class ManejadorEstudio(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             self.wfile.write(json.dumps({"respuesta": respuesta}).encode("utf-8"))
+
+        elif url.path == "/api/cerebro/update_shot":
+            shot_id = payload.get("shot_id", "")
+            ancla = payload.get("ancla", "")
+            video = payload.get("video", "")
+            formato = payload.get("formato", "")
+            ok = actualizar_shot_cerebro(shot_id, ancla, video, formato)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "ok" if ok else "error"}).encode("utf-8"))
+
+        elif url.path == "/api/cerebro/open":
+            if os.path.exists(CEREBRO_V2_DIR):
+                subprocess.Popen(['explorer', CEREBRO_V2_DIR])
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "opened"}).encode("utf-8"))
 
         else:
             self.send_response(404)
