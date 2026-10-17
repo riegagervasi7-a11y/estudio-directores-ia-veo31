@@ -5,7 +5,8 @@ Este archivo define la identidad visual, demografía y ADN de los 3 embajadores/
 ---
 
 ## 1. Valeria (Co-Founder & Product Strategist) - ✅ OFICIAL & BLOQUEADA
-* **Archivo de Referencia Maestra:** [`valeria_referencia_maestra.jpg`](file:///c:/Users/Gabo/Documents/entrenamiento%20de%20ai/personajes/valeria_referencia_maestra.jpg)
+* **Archivo de Referencia Maestra (Escena/Podcast):** [`valeria_referencia_maestra.jpg`](file:///c:/Users/Gabo/Documents/entrenamiento%20de%20ai/personajes/valeria_referencia_maestra.jpg)
+* **Archivo de Referencia de Estudio (Fondo Blanco Frontal):** [`valeria_frontal_blanco.jpg`](file:///c:/Users/Gabo/Documents/entrenamiento%20de%20ai/personajes/valeria_frontal_blanco.jpg)
 * **Demografía:** Mujer latinoamericana (arquetipo colombiano / mexicano / peruano), 30 años.
 * **Rasgos Físicos:**
   * Cabello castaño oscuro, ondulado natural a la altura de los hombros, con raya ligeramente ladeada.
